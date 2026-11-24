@@ -341,31 +341,32 @@
     // QUESTION BANK (Exact 12 Questions, Tags, Hints, Options, and Rationales)
     // =========================================================================
     const QUESTIONS = [
-      {
+           {
         id: 1,
         tag: "Progress & Preservation",
-        question: "Suppose a faulty typing rule accepts $\\text{if } 1 > 2 \\text{ then } \\text{'a'} \\text{ else } 5$ with type $\\text{char}$. Which type safety guarantee does this violate, and why?",
-        hint: "Step the expression to its final value and compare the type of that value against the predicted type $\\text{char}$.",
+        question: "Suppose a faulty T-if accepts $\\text{if } 1 > 2 \\text{ then } 5 \\text{ else } \\text{'a'}$ and says it has type $N$ (the type of the then-branch). Then $(\\text{if } 1 > 2 \\text{ then } 5 \\text{ else } \\text{'a'}) + 1$ is well-typed. What happens when it is evaluated, and which guarantee breaks?",
+        hint: "Evaluate it step by step. After each step, ask: is the expression still well-typed?",
         correctIndex: 0,
         options: [
           {
-            text: "Preservation, because the expression evaluates to $5$ which has type $N$ rather than $\\text{char}$",
-            rationale: "Correct! The expression can take evaluation steps without getting stuck, but it evaluates to $5 : N$, violating Preservation because the type changed from $\\text{char}$ to $N$."
+            text: "It steps to $\\text{'a'} + 1$, which is ill-typed, so Preservation breaks",
+            rationale: "Correct! $1 > 2$ is $\\text{false}$, so the if gives $\\text{'a'}$ and the expression becomes $\\text{'a'} + 1$. A well-typed expression evaluated to an ill-typed one, which Preservation forbids. Then it is stuck: Preservation enables Progress, so once Preservation breaks, Progress can no longer protect the program."
           },
           {
-            text: "Progress, because the condition $1 > 2$ cannot be evaluated",
-            rationale: "Misconception: $1 > 2$ evaluates cleanly to $\\text{false}$ and steps to $5$, so the machine never gets stuck; the failure is that the resulting value's type does not match $\\text{char}$."
+            text: "It steps to $\\text{'a'} + 1$, which is stuck, so Progress breaks",
+            rationale: "Misconception: $\\text{'a'} + 1$ is stuck, but it is not well-typed, and Progress only speaks about well-typed expressions. The guarantee that broke is the step before: a well-typed expression became ill-typed. That is Preservation."
           },
           {
-            text: "Progress, because $\\text{'a'}$ and $5$ are not valid values",
-            rationale: "Misconception: Both $\\text{'a'}$ and $5$ are valid values; Progress only fails when a non-value expression has no applicable evaluation rule."
+            text: "It is stuck immediately, so Progress breaks",
+            rationale: "Misconception: The first steps work: $1 > 2$ steps to $\\text{false}$, and the if steps to $\\text{'a'}$. The trouble starts when the result is ill-typed."
           },
           {
-            text: "Neither guarantee, because the $\\text{then}$ branch has type $\\text{char}$",
-            rationale: "Misconception: Because $1 > 2$ is $\\text{false}$, evaluation takes the $\\text{else}$ branch ($5 : N$), breaking Preservation."
+            text: "Nothing breaks; it evaluates to $6$",
+            rationale: "Misconception: $1 > 2$ is $\\text{false}$, so the if gives the else-branch $\\text{'a'}$, not $5$. That leaves $\\text{'a'} + 1$, which has no evaluation rule."
           }
         ]
       },
+      
       {
         id: 2,
         tag: "Progress & Preservation",
