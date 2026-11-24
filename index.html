@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Type Rules — Self-Check (not graded)</title>
+
+  <!-- Tailwind CSS for clean, responsive academic styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter for clear reading & JetBrains Mono for AST/type-checker expressions -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- KaTeX CSS & JS via jsDelivr CDN for crisp formal typing notation -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: #f8fafc;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Clean monospace badges for inline code */
+    code.inline-code {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.375rem;
+      padding: 0.1rem 0.42rem;
+      word-break: break-word;
+    }
+
+    .katex {
+      font-size: 1.04em;
+    }
+
+    /* Smooth option card transitions */
+    .option-card {
+      transition: transform 0.12s ease, border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .option-card:hover {
+      transform: translateY(-1px);
+    }
+
+    /* Subtle horizontal scrollbar for question pills on narrow screens */
+    .pill-strip::-webkit-scrollbar {
+      height: 4px;
+    }
+    .pill-strip::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-950">
+
+  <!-- =========================================================
+       TOP BAR: Title, Progress, Navigator Pills, Shuffle & Reset
+       ========================================================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-3.5 space-y-3">
+      <!-- Row 1: Title, Progress Indicator, Shuffle Toggle, Reset Button -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0 select-none" aria-hidden="true">
+            &Gamma;&vdash;
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-sm sm:text-base font-bold text-slate-900 truncate">
+              Type Rules &mdash; Self-Check (not graded)
+            </h1>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span id="top-progress-text" class="font-medium text-indigo-700">Question 1 of 12</span>
+              <span id="revisit-mode-badge" class="hidden px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold text-[11px]">
+                Revisit Deck
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls: Shuffle Choices Toggle & Reset Button -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+          <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700 cursor-pointer select-none transition">
+            <input
+              type="checkbox"
+              id="shuffle-toggle"
+              checked
+              onchange="handleShuffleToggle(this.checked)"
+              class="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            />
+            <span>Shuffle Choices</span>
+          </label>
+
+          <button
+            type="button"
+            onclick="resetPractice()"
+            title="Reset all questions and return to Question 1"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 transition cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Row 2: Clickable Question Navigator Pills (1-12) -->
+      <div class="flex items-center justify-between gap-3 pt-0.5">
+        <div id="question-pills" class="flex items-center gap-1.5 overflow-x-auto pill-strip py-0.5" role="navigation" aria-label="Question navigator">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="hidden sm:flex items-center gap-3 text-[11px] text-slate-500 shrink-0">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            First try
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Revisit
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subtle Non-Blocking Toast Notification -->
+  <div id="toast-banner" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-medium shadow-lg">
+    <span id="toast-message"></span>
+  </div>
+
+  <!-- =========================================================
+       MAIN WORKSPACE: Instant Question View or Study Review Screen
+       ========================================================= -->
+  <main class="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- STUDY PRACTICE VIEW (Shown immediately on load) -->
+    <section id="practice-view" class="space-y-5">
+      <article class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-xs space-y-6">
+        <!-- Top Row: Topic Tag Pill + Collapsible Hint Toggle -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2">
+            <span id="topic-pill" class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/70 text-xs font-semibold">
+              Topic
+            </span>
+          </div>
+
+          <button
+            type="button"
+            id="hint-btn"
+            onclick="toggleHint()"
+            aria-expanded="false"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200 text-amber-900 text-xs font-semibold transition cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" />
+            </svg>
+            <span id="hint-btn-label">Need a hint?</span>
+          </button>
+        </div>
+
+        <!-- Question Stem -->
+        <div id="question-stem" class="text-base sm:text-lg font-semibold text-slate-900 leading-relaxed">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Collapsible Hint Drawer -->
+        <div id="hint-drawer" class="hidden rounded-xl bg-amber-50/70 border border-amber-200/90 px-4 py-3.5 text-xs sm:text-sm text-amber-950 leading-relaxed">
+          <div class="flex items-start gap-2.5">
+            <span class="font-bold text-amber-800 shrink-0">Hint:</span>
+            <div id="hint-text"></div>
+          </div>
+        </div>
+
+        <!-- 4 Clickable Answer Options -->
+        <div id="options-list" class="space-y-3" role="radiogroup" aria-label="Answer options">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Formative Rationale & Action Panel -->
+        <div id="rationale-box" class="hidden rounded-xl border p-4 sm:p-5 space-y-3 transition-all">
+          <div id="rationale-status" class="flex items-center gap-2 text-xs sm:text-sm font-bold">
+            <!-- Populated dynamically -->
+          </div>
+          <div id="rationale-body" class="text-xs sm:text-sm leading-relaxed">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Controls when an incorrect choice is currently active -->
+          <div id="incorrect-controls" class="hidden pt-1 flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onclick="promptTryAgain()"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-amber-100/70 text-amber-950 border border-amber-300 text-xs sm:text-sm font-semibold transition cursor-pointer"
+            >
+              <span>Try Again</span>
+            </button>
+            <button
+              type="button"
+              onclick="revealAnswer()"
+              class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold transition cursor-pointer"
+            >
+              <span>Reveal Answer</span>
+            </button>
+          </div>
+
+          <!-- Helpful note once solved or revealed -->
+          <p id="explore-note" class="hidden text-xs text-slate-500 pt-0.5">
+            Tip: Click any other option above if you want to read why that distractor is incorrect.
+          </p>
+        </div>
+      </article>
+
+      <!-- Bottom Navigation Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          id="prev-btn"
+          onclick="goRelative(-1)"
+          class="inline-flex items-center gap-2 px-4 sm:px-5 py-3 rounded-xl bg-white hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none border border-slate-200 text-slate-700 text-sm font-semibold transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span>Previous</span>
+        </button>
+
+        <span class="hidden md:inline text-xs text-slate-400">
+          Shortcuts: <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-600">1</kbd>&ndash;<kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-600">4</kbd> choose &bull; <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-600">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-600">&rarr;</kbd> next
+        </span>
+
+        <button
+          type="button"
+          id="next-btn"
+          onclick="goNextOrReview()"
+          class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold shadow-xs transition cursor-pointer"
+        >
+          <span id="next-btn-label">Next Question</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         END-OF-DECK STUDY REVIEW SCREEN (UNGRADED)
+         ========================================================= -->
+    <section id="review-view" class="hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+        <div class="space-y-2 border-b border-slate-100 pb-5">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+            Self-Study Session Summary
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">
+            Concept Review by Topic
+          </h2>
+          <p class="text-sm text-slate-600 leading-relaxed">
+            Here is a quick map of which typing concepts clicked right away and which ones took an extra try or reveal. Click any question pill below to jump straight back to its explanation.
+          </p>
+        </div>
+
+        <!-- Two-Column Topic Breakdown -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Solved Smoothly on First Try -->
+          <div class="rounded-2xl border border-emerald-200/90 bg-emerald-50/40 p-5 space-y-3.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">&#10003;</span>
+              <h3 class="font-bold text-emerald-950 text-sm sm:text-base">
+                Solved Smoothly on First Try
+              </h3>
+            </div>
+            <p class="text-xs text-emerald-800/90">
+              Topics answered on your very first attempt without needing a reveal:
+            </p>
+            <div id="smooth-topics-container" class="space-y-2.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Concepts to Revisit -->
+          <div class="rounded-2xl border border-amber-200/90 bg-amber-50/40 p-5 space-y-3.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold shrink-0">&#8635;</span>
+              <h3 class="font-bold text-amber-950 text-sm sm:text-base">
+                Concepts to Revisit
+              </h3>
+            </div>
+            <p class="text-xs text-amber-900/80">
+              Topics that took extra tries, used a reveal, or haven&rsquo;t been attempted yet:
+            </p>
+            <div id="revisit-topics-container" class="space-y-2.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Study Action Buttons -->
+        <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
+          <button
+            type="button"
+            id="practice-revisited-btn"
+            onclick="practiceRevisitedConcepts()"
+            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-45 disabled:pointer-events-none text-white text-sm font-semibold shadow-xs transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            <span id="practice-revisited-label">Practice Revisited Concepts</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="practiceAllAgain()"
+            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-xs transition cursor-pointer"
+          >
+            <span>Practice All 12 Again</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // QUESTION BANK (Exact 12 Questions, Tags, Hints, Options, and Rationales)
+    // =========================================================================
+    const QUESTIONS = [
+      {
+        id: 1,
+        tag: "Progress & Preservation",
+        question: "Suppose a faulty typing rule accepts $\\text{if } 1 > 2 \\text{ then } \\text{'a'} \\text{ else } 5$ with type $\\text{char}$. Which type safety guarantee does this violate, and why?",
+        hint: "Step the expression to its final value and compare the type of that value against the predicted type $\\text{char}$.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Preservation, because the expression evaluates to $5$ which has type $N$ rather than $\\text{char}$",
+            rationale: "Correct! The expression can take evaluation steps without getting stuck, but it evaluates to $5 : N$, violating Preservation because the type changed from $\\text{char}$ to $N$."
+          },
+          {
+            text: "Progress, because the condition $1 > 2$ cannot be evaluated",
+            rationale: "Misconception: $1 > 2$ evaluates cleanly to $\\text{false}$ and steps to $5$, so the machine never gets stuck; the failure is that the resulting value's type does not match $\\text{char}$."
+          },
+          {
+            text: "Progress, because $\\text{'a'}$ and $5$ are not valid values",
+            rationale: "Misconception: Both $\\text{'a'}$ and $5$ are valid values; Progress only fails when a non-value expression has no applicable evaluation rule."
+          },
+          {
+            text: "Neither guarantee, because the $\\text{then}$ branch has type $\\text{char}$",
+            rationale: "Misconception: Because $1 > 2$ is $\\text{false}$, evaluation takes the $\\text{else}$ branch ($5 : N$), breaking Preservation."
+          }
+        ]
+      },
+      {
+        id: 2,
+        tag: "Progress & Preservation",
+        question: "Suppose a faulty typing rule accepts $\\text{if } 2 \\text{ then } \\text{'a'} \\text{ else } \\text{'b'}$. Which type safety guarantee does this violate, and why?",
+        hint: "Try to take one evaluation step. Is there a rule for an $\\text{if}$ whose condition is $2$?",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Progress, because there is no rule for $\\text{if } 2$, so evaluation is stuck",
+            rationale: "Correct! $2$ is neither $\\text{true}$ nor $\\text{false}$, so no evaluation rule applies. A term the rule called well-typed is stuck, which is exactly what Progress forbids."
+          },
+          {
+            text: "Preservation, because the result changes type from $\\text{char}$ to $N$",
+            rationale: "Misconception: Evaluation never reaches a result. It is stuck at the very first step, before any type could change."
+          },
+          {
+            text: "Neither, because $2$ counts as $\\text{true}$",
+            rationale: "Misconception: Some languages treat nonzero numbers as true, but ours does not. Only $\\text{true}$ and $\\text{false}$ can be conditions; ints are not Booleans."
+          },
+          {
+            text: "Neither, because both branches have the same type $\\text{char}$",
+            rationale: "Misconception: Matching branches is only half of $\\text{T-if-then-else}$. The condition must also have type $B$, and $2 : N$."
+          }
+        ]
+      },
+      {
+        id: 3,
+        tag: "Typing Rules",
+        question: "In $\\text{T-fundef}$, why is the body $e$ checked in $\\Gamma[x \\mapsto t_1]$ instead of in $\\Gamma$?",
+        hint: "The body mentions $x$. Which rule types a variable, and where does it look?",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Because the body may use $x$, and $\\text{T-var}$ can only type $x$ if $\\Gamma$ has a binding for it",
+            rationale: "Correct! $\\text{T-var}$ looks $x$ up in $\\Gamma$. Without the binding $x : t_1$, every use of $x$ in the body would be rejected. No binding, no type for $x$."
+          },
+          {
+            text: "To add $x$ to $\\Gamma$ permanently for the rest of the program",
+            rationale: "Misconception: The extension $\\Gamma[x \\mapsto t_1]$ is used only while checking the body $e$; $x$ does not leak into the outer environment $\\Gamma$."
+          },
+          {
+            text: "To evaluate the body $e$ to a value before any argument is supplied",
+            rationale: "Misconception: $\\text{T-fundef}$ is a compile-time typing rule, not an evaluation rule. Nothing is evaluated during type checking."
+          },
+          {
+            text: "To store the argument's value for later calls",
+            rationale: "Misconception: $\\Gamma$ holds types, not values. The argument's value only exists at run time, in the value environment $E$."
+          }
+        ]
+      },
+      {
+        id: 4,
+        tag: "Typing Rules",
+        question: "In the typing rule $\\text{T-let}$ for $\\text{let } x \\leftarrow e_1 \\text{ in } e_2$, if $\\Gamma \\vdash e_1 : \\tau_1$, what is the correct second premise for checking $e_2$?",
+        hint: "Compare $\\text{T-let}$ with $\\text{T-fundef}$: how is $x$'s newly discovered type $\\tau_1$ made available while checking $e_2$?",
+        correctIndex: 0,
+        options: [
+          {
+            text: "$\\Gamma[x \\mapsto \\tau_1] \\vdash e_2 : \\tau_2$",
+            rationale: "Correct! Once $e_1$ is shown to have type $\\tau_1$, $e_2$ is checked in $\\Gamma$ extended with $x \\mapsto \\tau_1$, producing the overall type $\\tau_2$."
+          },
+          {
+            text: "$\\Gamma \\vdash e_2 : \\tau_2$",
+            rationale: "Misconception: Checking $e_2$ in the unextended $\\Gamma$ would reject valid references to $x$ inside $e_2$."
+          },
+          {
+            text: "$\\Gamma[x \\mapsto e_1] \\vdash e_2 : \\tau_2$",
+            rationale: "Misconception: The type environment $\\Gamma$ maps variables to types ($\\tau_1$), not unevaluated expressions ($e_1$)."
+          },
+          {
+            text: "$\\Gamma[x \\mapsto \\tau_2] \\vdash e_2 : \\tau_1$",
+            rationale: "Misconception: $x$ gets the type of $e_1$, which is $\\tau_1$; the type of $e_2$, $\\tau_2$, is the result type of the whole let."
+          }
+        ]
+      },
+      {
+        id: 5,
+        tag: "Function Application",
+        question: "In $\\text{T-funapp}$, why must the compiler check the first premise $\\Gamma \\vdash e_1 : t_{\\text{in}} \\to t_{\\text{out}}$ before allowing $e_1\\ e_2$?",
+        hint: "Consider what happens at runtime if $e_1$ is a string like $\\text{\"a\"}$ in the expression $\\text{\"a\"}\\ 5$.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "To uphold Progress by ensuring $e_1$ evaluates to a function rather than a non-callable value",
+            rationale: "Correct! Without checking that $e_1$ has a function type $t_{\\text{in}} \\to t_{\\text{out}}$, an expression like $\\text{\"a\"}\\ 5$ would pass type checking and get stuck at runtime when trying to apply a non-function."
+          },
+          {
+            text: "To uphold Preservation by forcing $e_2$ to have type $t_{\\text{out}}$",
+            rationale: "Misconception: Checking $e_1$'s arrow type ensures $e_1$ is callable (Progress); Preservation of argument compatibility is enforced by the second premise $\\Gamma \\vdash e_2 : t_{\\text{in}}$."
+          },
+          {
+            text: "To guarantee that evaluating $e_1\\ e_2$ always terminates in finite steps",
+            rationale: "Misconception: Static typing rules do not guarantee termination (a well-typed recursive function can still loop forever)."
+          },
+          {
+            text: "To look up $e_1$ directly in the runtime value environment $E$",
+            rationale: "Misconception: $e_1$ can be an arbitrary expression (such as a lambda or another application), not just a variable, and $\\Gamma$ is a compile-time type environment."
+          }
+        ]
+      },
+      {
+        id: 6,
+        tag: "Function Application",
+        question: "Let $f : N \\to N$ be in $\\Gamma$, where $f$ is $\\lambda x.\\ x + 1$. Which premise of $\\text{T-funapp}$ rejects $f\\ \\text{\"a\"}$, and which guarantee does it protect?",
+        hint: "$f$ is a function, so look at the argument instead.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "The second premise ($e_2$ must have type $t_{\\text{in}}$); it protects Preservation",
+            rationale: "Correct! $\\text{\"a\"}$ is a string, not $N$. If the rule accepted $f\\ \\text{\"a\"} : N$, one step gives $\\text{\"a\"} + 1$, which has no type: a well-typed term stepped to an ill-typed one."
+          },
+          {
+            text: "The first premise ($e_1$ must have a function type); it protects Progress",
+            rationale: "Misconception: $f$ does have a function type, $N \\to N$, so the first premise is satisfied. That premise is the one that rejects $\\text{\"a\"}\\ 5$."
+          },
+          {
+            text: "No premise rejects it; $f\\ \\text{\"a\"}$ is well-typed with type $N$",
+            rationale: "Misconception: The argument's type must match $f$'s input type. $\\text{\"a\"}$ is a string, and $f$ expects $N$."
+          },
+          {
+            text: "The conclusion, because the result type $t_{\\text{out}}$ would have to be $\\text{string}$",
+            rationale: "Misconception: The conclusion only states the type of the whole application. The mismatch is in the argument, and a premise checks the argument."
+          }
+        ]
+      },
+      {
+        id: 7,
+        tag: "Function Application",
+        question: "Given the type environment $\\Gamma = [g \\mapsto N \\to N \\to B]$, what is the type of $\\lambda x.\\ g\\ (x + 1)$ under $\\Gamma$?",
+        hint: "First find the type of $x$ from $x + 1$, then see what type remains when $g$ is applied to just one $N$ argument.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "$N \\to N \\to B$",
+            rationale: "Correct! From $x + 1$, $x$ must have type $N$. Applying $g : N \\to (N \\to B)$ to $(x + 1) : N$ yields $N \\to B$, so wrapping in $\\lambda x$ gives $N \\to N \\to B$."
+          },
+          {
+            text: "$N \\to B$",
+            rationale: "Misconception: $N \\to B$ is the type of the body $g\\ (x + 1)$ inside $\\Gamma[x \\mapsto N]$, forgetting the outer $\\lambda x$ abstraction."
+          },
+          {
+            text: "$B$",
+            rationale: "Misconception: $g$ is curried and takes two $N$ arguments to produce $B$; here it is only partially applied to one argument $(x + 1)$."
+          },
+          {
+            text: "$(N \\to N \\to B) \\to N \\to B$",
+            rationale: "Misconception: $g$ is already bound in $\\Gamma$, not a parameter of the lambda; the lambda parameter is $x : N$."
+          }
+        ]
+      },
+      {
+        id: 8,
+        tag: "Type Derivations",
+        question: "Let $\\Gamma = [f \\mapsto N \\to B,\\; y \\mapsto N]$. Which expression is well-typed under $\\Gamma$ with type $N$?",
+        hint: "Check both the condition type (must be $B$) and that both branches of $\\text{if-then-else}$ share the same type $N$.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "$\\text{if } f\\ (y + 1) \\text{ then } y \\text{ else } 0$",
+            rationale: "Correct! $y + 1 : N$, so $f\\ (y + 1) : B$ is a valid boolean guard, and both branches $y$ and $0$ have type $N$."
+          },
+          {
+            text: "$\\text{if } y + 1 \\text{ then } y \\text{ else } 0$",
+            rationale: "Misconception: The guard $y + 1$ has type $N$ instead of $B$, violating $\\text{T-if-then-else}$."
+          },
+          {
+            text: "$\\text{if } f\\ y \\text{ then } f\\ 0 \\text{ else } y$",
+            rationale: "Misconception: The $\\text{then}$ branch $f\\ 0$ has type $B$ while the $\\text{else}$ branch $y$ has type $N$, violating branch type agreement."
+          },
+          {
+            text: "$f\\ (y + 1) + 2$",
+            rationale: "Misconception: $f\\ (y + 1)$ has type $B$, so adding $2 : N$ to it fails $\\text{T-add}$."
+          }
+        ]
+      },
+      {
+        id: 9,
+        tag: "Type Checker Implementation",
+        question: "In the type checker, what should `case Var x` return?",
+        hint: "This case implements $\\text{T-var}$: if $\\Gamma(x) = t$, then $\\Gamma \\vdash x : t$.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "`gamma(x)`, the type of `x` in the type environment",
+            rationale: "Correct! This is $\\text{T-var}$ in one line: look $x$ up in $\\Gamma$ and return its type. If $x$ is not in $\\Gamma$, the lookup fails and $x$ is rejected."
+          },
+          {
+            text: "The value of `x` from the value environment $E$",
+            rationale: "Misconception: `check` returns types, not values. $E$ belongs to `eval`; `check` uses $\\Gamma$ (`gamma`)."
+          },
+          {
+            text: "Always `IntType`",
+            rationale: "Misconception: A variable can have any type. Its type is whatever $\\Gamma$ says, for example `BoolType` if $\\Gamma(x) = B$."
+          },
+          {
+            text: "`check(Var x, gamma)`",
+            rationale: "Misconception: That calls `check` on the same expression again and never stops. A variable is a base case: just look it up."
+          }
+        ]
+      },
+      {
+        id: 10,
+        tag: "Type Checker Implementation",
+        question: "According to the formal rule $\\text{T-EQ}$ ($\\Gamma \\vdash e_1 : \\tau$ and $\\Gamma \\vdash e_2 : \\tau$ implies $\\Gamma \\vdash e_1 = e_2 : \\text{bool}$), how should `Binexp(EqOp, e1, e2)` behave in `check`?",
+        hint: "Notice that $\\text{T-EQ}$ uses a type variable $\\tau$ for both operands rather than hardcoding `IntType`, while always returning `BoolType`.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Require `check(e1, gamma) = check(e2, gamma)`, then return `BoolType`",
+            rationale: "Correct! Both operands must share the same type $\\tau$ (whether `IntType` or `BoolType`), and comparing them for equality always produces `BoolType`."
+          },
+          {
+            text: "Require both operands to be `IntType`, then return `IntType`",
+            rationale: "Misconception: $\\text{T-EQ}$ applies to any matching type $\\tau$ (not just integers), and equality comparisons return `BoolType`, not `IntType`."
+          },
+          {
+            text: "Require both operands to be `BoolType`, then return `BoolType`",
+            rationale: "Misconception: Restricting `EqOp` to `BoolType` rejects valid integer equality checks like `1 = 2`."
+          },
+          {
+            text: "Return whatever type `check(e1, gamma)` produces without checking `e2`",
+            rationale: "Misconception: Skipping the check on `e2` would allow ill-typed comparisons like `1 = true` and return the wrong result type."
+          }
+        ]
+      },
+      {
+        id: 11,
+        tag: "Conservatism & Halting",
+        question: "Why does a static type checker reject $\\text{if } a \\text{ then } 1 \\text{ else } 1 + \\text{true}$ (given $a : B$), even when $a$ always evaluates to $\\text{true}$ at runtime?",
+        hint: "Recall why static type systems are described as a conservative abstraction of runtime behavior.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Static typing is conservative and checks all syntactic branches without knowing runtime values",
+            rationale: "Correct! Because static analysis cannot in general decide which branch will execute at runtime, it conservatively requires every branch to be well-typed."
+          },
+          {
+            text: "Because $\\text{T-if-then-else}$ forbids variables in the condition position",
+            rationale: "Misconception: Any boolean expression (including a variable $a : B$) is allowed as the guard; the error is specifically $1 + \\text{true}$ in the $\\text{else}$ branch."
+          },
+          {
+            text: "Because the $\\text{then}$ branch $1$ has type $N$ instead of $B$",
+            rationale: "Misconception: The branches of an `if` expression may have any matching type $\\tau$ (such as $N$); only the condition must have type $B$."
+          },
+          {
+            text: "Because $1 + \\text{true}$ evaluates to $2$ in big-step semantics",
+            rationale: "Misconception: $1 + \\text{true}$ has no big-step evaluation rule and would get stuck if reached; the type checker rejects it even when unreachable."
+          }
+        ]
+      },
+      {
+        id: 12,
+        tag: "Conservatism & Halting",
+        question: "What does a well-typed non-terminating program such as $\\text{function } f(x) \\text{ is } f(x + 1);\\; f(0)$ demonstrate about type safety?",
+        hint: "Compare the definition of Progress ('either a value or can take another step') with total termination.",
+        correctIndex: 0,
+        options: [
+          {
+            text: "Type safety guarantees freedom from stuck states, not program termination",
+            rationale: "Correct! Progress states that a well-typed term is either a value or can take another evaluation step—an infinite loop keeps taking valid steps forever without ever getting stuck."
+          },
+          {
+            text: "Type safety is broken whenever a well-typed function calls itself recursively",
+            rationale: "Misconception: Recursive functions are completely compatible with type safety; diverging programs never enter an undefined/stuck state."
+          },
+          {
+            text: "Preservation fails on $f(x + 1)$ because the argument type changes on each call",
+            rationale: "Misconception: On every recursive call, $x + 1$ still has type $N$, so Preservation holds at every step."
+          },
+          {
+            text: "Static type checkers must reject all infinite loops at compile time",
+            rationale: "Misconception: Detecting all infinite loops is undecidable (the Halting Problem), so standard type systems do not attempt to reject non-terminating programs."
+          }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // APPLICATION STATE
+    // =========================================================================
+    let activeDeckIndices = QUESTIONS.map((_, idx) => idx); // Indices into QUESTIONS
+    let currentPos = 0; // Position in activeDeckIndices
+    let shuffleEnabled = true;
+    let isReviewOpen = false;
+    let toastTimeout = null;
+
+    // Per-question study tracking keyed by question index (0..9)
+    let questionStates = [];
+
+    function createInitialQuestionState() {
+      return {
+        triedOptionIds: new Set(),
+        solved: false,
+        revealed: false,
+        activeOptionId: null,
+        hintOpen: false,
+        optionOrder: [0, 1, 2, 3]
+      };
+    }
+
+    function initAllQuestionStates() {
+      questionStates = QUESTIONS.map(() => {
+        const st = createInitialQuestionState();
+        if (shuffleEnabled) {
+          st.optionOrder = shuffledArray([0, 1, 2, 3]);
+        }
+        return st;
+      });
+    }
+
+    function shuffledArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // =========================================================================
+    // RICH TEXT & KATEX RENDERING HELPERS
+    // =========================================================================
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatRichText(raw) {
+      // Split into math segments ($...$, $$...$$), backtick inline code (`...`), and plain text
+      const tokenRegex = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$|`[^`]+?`)/g;
+      const parts = raw.split(tokenRegex);
+      return parts.map(part => {
+        if (!part) return "";
+        if ((part.startsWith("$$") && part.endsWith("$$")) || (part.startsWith("$") && part.endsWith("$"))) {
+          return escapeHtml(part);
+        }
+        if (part.startsWith("`") && part.endsWith("`")) {
+          return `<code class="inline-code">${escapeHtml(part.slice(1, -1))}</code>`;
+        }
+        return escapeHtml(part);
+      }).join("");
+    }
+
+    function renderMathSafe(containerEl) {
+      if (!containerEl) return;
+      if (typeof renderMathInElement === "function") {
+        try {
+          renderMathInElement(containerEl, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "$", right: "$", display: false }
+            ],
+            ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+            throwOnError: false
+          });
+        } catch (err) {
+          // Graceful fallback: plain text remains readable if KaTeX encounters an issue
+        }
+      }
+    }
+
+    // =========================================================================
+    // STUDY STATUS CLASSIFICATION (UNGRADED)
+    // =========================================================================
+    function getQuestionStudyStatus(qIdx) {
+      const st = questionStates[qIdx];
+      if (st.solved && !st.revealed && st.triedOptionIds.size === 1) {
+        return "smooth"; // Solved on first try without reveal
+      }
+      if (st.triedOptionIds.size > 0 || st.revealed) {
+        return "revisit"; // Took >1 try or used reveal
+      }
+      return "unattempted";
+    }
+
+    // =========================================================================
+    // UI RENDERING
+    // =========================================================================
+    function renderTopBar() {
+      const total = activeDeckIndices.length;
+      const progressText = document.getElementById("top-progress-text");
+      const revisitBadge = document.getElementById("revisit-mode-badge");
+
+      if (isReviewOpen) {
+        progressText.textContent = `Reviewing ${total} Question${total === 1 ? "" : "s"}`;
+      } else {
+        progressText.textContent = `Question ${currentPos + 1} of ${total}`;
+      }
+
+      if (activeDeckIndices.length < QUESTIONS.length) {
+        revisitBadge.classList.remove("hidden");
+      } else {
+        revisitBadge.classList.add("hidden");
+      }
+
+      // Render clickable navigator pills
+      const pillsContainer = document.getElementById("question-pills");
+      pillsContainer.innerHTML = "";
+
+      activeDeckIndices.forEach((qIdx, deckPos) => {
+        const status = getQuestionStudyStatus(qIdx);
+        const isCurrent = !isReviewOpen && deckPos === currentPos;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = String(qIdx + 1);
+        btn.setAttribute("aria-label", `Jump to Question ${qIdx + 1}`);
+
+        let classes = "w-8 h-8 rounded-lg text-xs font-semibold flex items-center justify-center shrink-0 border transition cursor-pointer ";
+        if (isCurrent) {
+          classes += "bg-indigo-600 text-white border-indigo-600 shadow-2xs ring-2 ring-indigo-200";
+        } else if (status === "smooth") {
+          classes += "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100";
+        } else if (status === "revisit") {
+          classes += "bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100";
+        } else {
+          classes += "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100";
+        }
+
+        btn.className = classes;
+        btn.onclick = () => jumpToDeckPos(deckPos);
+        pillsContainer.appendChild(btn);
+      });
+    }
+
+    function renderCurrentQuestion() {
+      const practiceView = document.getElementById("practice-view");
+      const reviewView = document.getElementById("review-view");
+      practiceView.classList.remove("hidden");
+      reviewView.classList.add("hidden");
+      isReviewOpen = false;
+
+      renderTopBar();
+
+      const qIdx = activeDeckIndices[currentPos];
+      const q = QUESTIONS[qIdx];
+      const st = questionStates[qIdx];
+
+      // Topic pill
+      document.getElementById("topic-pill").textContent = q.tag;
+
+      // Question stem
+      const stemEl = document.getElementById("question-stem");
+      stemEl.innerHTML = formatRichText(q.question);
+
+      // Hint drawer
+      const hintBtn = document.getElementById("hint-btn");
+      const hintBtnLabel = document.getElementById("hint-btn-label");
+      const hintDrawer = document.getElementById("hint-drawer");
+      const hintText = document.getElementById("hint-text");
+
+      hintText.innerHTML = formatRichText(q.hint);
+      if (st.hintOpen) {
+        hintDrawer.classList.remove("hidden");
+        hintBtnLabel.textContent = "Hide hint";
+        hintBtn.setAttribute("aria-expanded", "true");
+      } else {
+        hintDrawer.classList.add("hidden");
+        hintBtnLabel.textContent = "Need a hint?";
+        hintBtn.setAttribute("aria-expanded", "false");
+      }
+
+      // Render 4 options according to st.optionOrder
+      const optionsList = document.getElementById("options-list");
+      optionsList.innerHTML = "";
+
+      const isResolved = st.solved || st.revealed;
+
+      st.optionOrder.forEach((origOptIdx, displayIdx) => {
+        const opt = q.options[origOptIdx];
+        const isCorrectOpt = origOptIdx === q.correctIndex;
+        const wasTried = st.triedOptionIds.has(origOptIdx);
+        const isCurrentlyActive = st.activeOptionId === origOptIdx;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.setAttribute("role", "radio");
+        btn.setAttribute("aria-checked", isCurrentlyActive ? "true" : "false");
+
+        let cardStyle = "option-card w-full text-left p-4 rounded-xl border flex items-start gap-3.5 cursor-pointer ";
+        let badgeStyle = "w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 border transition ";
+        let statusTagHtml = "";
+
+        if (isResolved && isCorrectOpt) {
+          // Highlight correct option in emerald green
+          cardStyle += "bg-emerald-50/90 border-emerald-500 text-slate-900 shadow-2xs ";
+          badgeStyle += "bg-emerald-600 text-white border-emerald-600 ";
+          statusTagHtml = `<span class="ml-auto shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${st.revealed && !st.solved ? "Revealed Answer" : "Correct"}</span>`;
+        } else if (wasTried && !isCorrectOpt) {
+          // Gently mark tried distractors in amber/coral
+          cardStyle += isCurrentlyActive
+            ? "bg-amber-50 border-amber-400 text-slate-900 shadow-2xs "
+            : "bg-amber-50/50 border-amber-300/90 text-slate-800 hover:bg-amber-50 ";
+          badgeStyle += "bg-amber-500 text-white border-amber-500 ";
+          statusTagHtml = `<span class="ml-auto shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">Tried</span>`;
+        } else if (isResolved && isCurrentlyActive && !isCorrectOpt) {
+          // Student clicked an untried distractor after solving/revealing to inspect its rationale
+          cardStyle += "bg-slate-100/90 border-slate-400 text-slate-900 ";
+          badgeStyle += "bg-slate-700 text-white border-slate-700 ";
+          statusTagHtml = `<span class="ml-auto shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">Inspecting</span>`;
+        } else {
+          // Default calm slate/indigo hover state
+          cardStyle += "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/25 text-slate-800 ";
+          badgeStyle += "bg-slate-100 text-slate-700 border-slate-200 ";
+        }
+
+        btn.className = cardStyle;
+        btn.innerHTML = `
+          <span class="${badgeStyle}">${displayIdx + 1}</span>
+          <span class="flex-1 text-sm sm:text-[15px] leading-relaxed">${formatRichText(opt.text)}</span>
+          ${statusTagHtml}
+        `;
+
+        btn.onclick = () => selectOption(origOptIdx);
+        optionsList.appendChild(btn);
+      });
+
+      // Rationale & Feedback Box
+      const rationaleBox = document.getElementById("rationale-box");
+      const rationaleStatus = document.getElementById("rationale-status");
+      const rationaleBody = document.getElementById("rationale-body");
+      const incorrectControls = document.getElementById("incorrect-controls");
+      const exploreNote = document.getElementById("explore-note");
+
+      if (st.activeOptionId !== null) {
+        const activeOpt = q.options[st.activeOptionId];
+        const isCorrectActive = st.activeOptionId === q.correctIndex;
+
+        rationaleBox.classList.remove("hidden");
+        rationaleBody.innerHTML = formatRichText(activeOpt.rationale);
+
+        if (isCorrectActive) {
+          rationaleBox.className = "rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 sm:p-5 space-y-2.5 text-emerald-950";
+          rationaleStatus.className = "flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-800";
+          rationaleStatus.innerHTML = `
+            <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">&#10003;</span>
+            <span>${st.revealed && !st.solved ? "Answer Revealed — Explanation" : "Well done!"}</span>
+          `;
+          incorrectControls.classList.add("hidden");
+          exploreNote.classList.remove("hidden");
+        } else if (!isResolved) {
+          // Incorrect attempt while still actively solving
+          rationaleBox.className = "rounded-xl border border-amber-300/90 bg-amber-50/80 p-4 sm:p-5 space-y-3 text-amber-950";
+          rationaleStatus.className = "flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-900";
+          rationaleStatus.innerHTML = `
+            <span class="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
+            <span>Not quite — check this misconception</span>
+          `;
+          incorrectControls.classList.remove("hidden");
+          exploreNote.classList.add("hidden");
+        } else {
+          // Inspecting a distractor's rationale after already solving or revealing
+          rationaleBox.className = "rounded-xl border border-slate-300 bg-slate-50 p-4 sm:p-5 space-y-2.5 text-slate-900";
+          rationaleStatus.className = "flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700";
+          rationaleStatus.innerHTML = `
+            <span class="w-5 h-5 rounded-full bg-slate-600 text-white flex items-center justify-center text-xs">i</span>
+            <span>Why this option is incorrect</span>
+          `;
+          incorrectControls.classList.add("hidden");
+          exploreNote.classList.remove("hidden");
+        }
+      } else {
+        rationaleBox.classList.add("hidden");
+      }
+
+      // Bottom navigation buttons
+      const prevBtn = document.getElementById("prev-btn");
+      const nextBtnLabel = document.getElementById("next-btn-label");
+      prevBtn.disabled = currentPos === 0;
+
+      if (currentPos === activeDeckIndices.length - 1) {
+        nextBtnLabel.textContent = "Finish & Review Concepts";
+      } else {
+        nextBtnLabel.textContent = "Next Question";
+      }
+
+      // Render KaTeX math across the active question card
+      renderMathSafe(practiceView);
+    }
+
+    // =========================================================================
+    // INTERACTIVE STUDY ACTIONS
+    // =========================================================================
+    function selectOption(origOptIdx) {
+      const qIdx = activeDeckIndices[currentPos];
+      const q = QUESTIONS[qIdx];
+      const st = questionStates[qIdx];
+
+      const isAlreadyResolved = st.solved || st.revealed;
+
+      if (!isAlreadyResolved) {
+        st.triedOptionIds.add(origOptIdx);
+        st.activeOptionId = origOptIdx;
+
+        if (origOptIdx === q.correctIndex) {
+          st.solved = true;
+        }
+      } else {
+        // Allow exploring rationales of any option even after solving/revealing
+        st.activeOptionId = origOptIdx;
+      }
+
+      renderCurrentQuestion();
+    }
+
+    function promptTryAgain() {
+      const qIdx = activeDeckIndices[currentPos];
+      const st = questionStates[qIdx];
+      st.activeOptionId = null;
+      renderCurrentQuestion();
+      showToast("Pick another option to test your reasoning.");
+    }
+
+    function revealAnswer() {
+      const qIdx = activeDeckIndices[currentPos];
+      const q = QUESTIONS[qIdx];
+      const st = questionStates[qIdx];
+      st.revealed = true;
+      st.activeOptionId = q.correctIndex;
+      renderCurrentQuestion();
+    }
+
+    function toggleHint() {
+      const qIdx = activeDeckIndices[currentPos];
+      const st = questionStates[qIdx];
+      st.hintOpen = !st.hintOpen;
+      renderCurrentQuestion();
+    }
+
+    function jumpToDeckPos(deckPos) {
+      if (deckPos < 0 || deckPos >= activeDeckIndices.length) return;
+      currentPos = deckPos;
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function goRelative(delta) {
+      const target = currentPos + delta;
+      if (target >= 0 && target < activeDeckIndices.length) {
+        currentPos = target;
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    function goNextOrReview() {
+      if (currentPos < activeDeckIndices.length - 1) {
+        currentPos += 1;
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        openStudyReview();
+      }
+    }
+
+    function handleShuffleToggle(checked) {
+      shuffleEnabled = checked;
+      questionStates.forEach(st => {
+        st.optionOrder = shuffleEnabled ? shuffledArray([0, 1, 2, 3]) : [0, 1, 2, 3];
+      });
+      if (!isReviewOpen) {
+        renderCurrentQuestion();
+      }
+      showToast(shuffleEnabled ? "Answer choices shuffled." : "Answer choices restored to default order.");
+    }
+
+    function resetPractice() {
+      activeDeckIndices = QUESTIONS.map((_, idx) => idx);
+      currentPos = 0;
+      isReviewOpen = false;
+      initAllQuestionStates();
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      showToast("Practice reset — starting fresh at Question 1.");
+    }
+
+    // =========================================================================
+    // END-OF-DECK UNGRADED STUDY REVIEW SCREEN
+    // =========================================================================
+    function openStudyReview() {
+      isReviewOpen = true;
+      document.getElementById("practice-view").classList.add("hidden");
+      const reviewView = document.getElementById("review-view");
+      reviewView.classList.remove("hidden");
+
+      renderTopBar();
+
+      // Group all 12 questions by concept tag into Smooth vs Revisit
+      const smoothByTag = new Map();
+      const revisitByTag = new Map();
+      const revisitIndices = [];
+
+      QUESTIONS.forEach((q, qIdx) => {
+        const status = getQuestionStudyStatus(qIdx);
+        if (status === "smooth") {
+          if (!smoothByTag.has(q.tag)) smoothByTag.set(q.tag, []);
+          smoothByTag.get(q.tag).push({ q, qIdx });
+        } else {
+          if (!revisitByTag.has(q.tag)) revisitByTag.set(q.tag, []);
+          revisitByTag.get(q.tag).push({ q, qIdx, status });
+          revisitIndices.push(qIdx);
+        }
+      });
+
+      const smoothContainer = document.getElementById("smooth-topics-container");
+      const revisitContainer = document.getElementById("revisit-topics-container");
+      smoothContainer.innerHTML = "";
+      revisitContainer.innerHTML = "";
+
+      if (smoothByTag.size === 0) {
+        smoothContainer.innerHTML = `
+          <p class="text-xs text-slate-500 italic bg-white/80 rounded-xl p-3.5 border border-emerald-200/60">
+            No questions solved on the first try yet—use the revisit button below to practice any tricky concepts!
+          </p>
+        `;
+      } else {
+        smoothByTag.forEach((items, tag) => {
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-xl border border-emerald-200/80 p-3.5 flex flex-wrap items-center justify-between gap-2";
+          const qPills = items.map(({ qIdx }) =>
+            `<button type="button" onclick="inspectFromReview(${qIdx})" class="px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-semibold text-xs transition cursor-pointer">Q${qIdx + 1}</button>`
+          ).join(" ");
+          card.innerHTML = `
+            <span class="text-xs sm:text-sm font-semibold text-slate-800">${escapeHtml(tag)}</span>
+            <div class="flex items-center gap-1.5">${qPills}</div>
+          `;
+          smoothContainer.appendChild(card);
+        });
+      }
+
+      if (revisitByTag.size === 0) {
+        revisitContainer.innerHTML = `
+          <p class="text-xs text-emerald-800 bg-white/90 rounded-xl p-3.5 border border-emerald-200/70 font-medium">
+            Every concept was solved smoothly on the first try! Feel free to run through all 12 again with shuffled choices.
+          </p>
+        `;
+      } else {
+        revisitByTag.forEach((items, tag) => {
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-xl border border-amber-200/80 p-3.5 flex flex-wrap items-center justify-between gap-2";
+          const qPills = items.map(({ qIdx, status }) => {
+            const label = status === "unattempted" ? `Q${qIdx + 1} (unattempted)` : `Q${qIdx + 1}`;
+            return `<button type="button" onclick="inspectFromReview(${qIdx})" class="px-2 py-0.5 rounded-md bg-amber-100 hover:bg-amber-200 text-amber-950 font-semibold text-xs transition cursor-pointer">${label}</button>`;
+          }).join(" ");
+          card.innerHTML = `
+            <span class="text-xs sm:text-sm font-semibold text-slate-800">${escapeHtml(tag)}</span>
+            <div class="flex items-center gap-1.5">${qPills}</div>
+          `;
+          revisitContainer.appendChild(card);
+        });
+      }
+
+      const revisitBtn = document.getElementById("practice-revisited-btn");
+      const revisitLabel = document.getElementById("practice-revisited-label");
+      if (revisitIndices.length === 0) {
+        revisitBtn.disabled = true;
+        revisitLabel.textContent = "No Revisited Concepts";
+      } else {
+        revisitBtn.disabled = false;
+        revisitLabel.textContent = `Practice Revisited Concepts (${revisitIndices.length})`;
+      }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function inspectFromReview(qIdx) {
+      // Ensure the question is visible in the active deck so student can review its rationale
+      let deckPos = activeDeckIndices.indexOf(qIdx);
+      if (deckPos === -1) {
+        activeDeckIndices = QUESTIONS.map((_, idx) => idx);
+        deckPos = qIdx;
+      }
+      currentPos = deckPos;
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function practiceRevisitedConcepts() {
+      const revisitIndices = [];
+      QUESTIONS.forEach((_, qIdx) => {
+        if (getQuestionStudyStatus(qIdx) !== "smooth") {
+          revisitIndices.push(qIdx);
+        }
+      });
+
+      if (revisitIndices.length === 0) return;
+
+      // Reset states for those revisited questions so the student can re-practice them cleanly
+      revisitIndices.forEach(qIdx => {
+        const st = createInitialQuestionState();
+        if (shuffleEnabled) {
+          st.optionOrder = shuffledArray([0, 1, 2, 3]);
+        }
+        questionStates[qIdx] = st;
+      });
+
+      activeDeckIndices = revisitIndices;
+      currentPos = 0;
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      showToast(`Practicing ${revisitIndices.length} revisited question${revisitIndices.length === 1 ? "" : "s"}.`);
+    }
+
+    function practiceAllAgain() {
+      resetPractice();
+    }
+
+    // =========================================================================
+    // NON-BLOCKING TOAST HELPER
+    // =========================================================================
+    function showToast(msg) {
+      const banner = document.getElementById("toast-banner");
+      const textEl = document.getElementById("toast-message");
+      textEl.textContent = msg;
+      banner.classList.remove("hidden");
+      banner.classList.add("flex");
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        banner.classList.add("hidden");
+        banner.classList.remove("flex");
+      }, 2400);
+    }
+
+    // =========================================================================
+    // KEYBOARD SHORTCUTS (1-4 to select, ArrowRight/Enter for Next, ArrowLeft)
+    // =========================================================================
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isReviewOpen) return;
+
+      const key = e.key;
+      if (key === "1" || key === "2" || key === "3" || key === "4") {
+        e.preventDefault();
+        const displayIdx = parseInt(key, 10) - 1;
+        const qIdx = activeDeckIndices[currentPos];
+        const origOptIdx = questionStates[qIdx].optionOrder[displayIdx];
+        if (origOptIdx !== undefined) {
+          selectOption(origOptIdx);
+        }
+      } else if (key === "ArrowRight") {
+        e.preventDefault();
+        goNextOrReview();
+      } else if (key === "ArrowLeft") {
+        e.preventDefault();
+        goRelative(-1);
+      } else if (key === "Enter") {
+        // Avoid double-triggering if focus is already on a button or checkbox
+        const tag = document.activeElement ? document.activeElement.tagName : "";
+        if (tag !== "BUTTON" && tag !== "INPUT") {
+          e.preventDefault();
+          goNextOrReview();
+        }
+      }
+    });
+
+    // =========================================================================
+    // INSTANT START ON PAGE LOAD ("JUST PLAY")
+    // =========================================================================
+    window.addEventListener("DOMContentLoaded", () => {
+      initAllQuestionStates();
+      renderCurrentQuestion();
+    });
+
+    window.addEventListener("load", () => {
+      // Re-run KaTeX auto-render once deferred CDN scripts have finished loading
+      if (!isReviewOpen) {
+        renderMathSafe(document.getElementById("practice-view"));
+      }
+    });
+  </script>
+</body>
+</html>
